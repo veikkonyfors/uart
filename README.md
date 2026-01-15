@@ -1,0 +1,1 @@
+Library for Universal Asynchronous Receiver-Transmitter functionality
