@@ -1,0 +1,2 @@
+#define uart_VERSION_MAJOR @uart_VERSION_MAJOR@
+#define uart_VERSION_MINOR @uart_VERSION_MINOR@
