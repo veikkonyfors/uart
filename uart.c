@@ -13,7 +13,7 @@
 #include <stdint.h>
 
 
-static int uart_fd = -1;
+int uart_fd = -1;
 
 int uart_init(const char *port, int baudrate) {
     struct termios options;
@@ -115,25 +115,7 @@ int uart_send(const uint8_t *data, size_t len) {
     return 0;
 }
 
-/**
- *
- * Created on: Jan 6, 2026
- * Author: pappa
- *
- * @brief Reads a frame from uart port previously initialized with uart_init().
- * frame starts with header byte 0xC8
- * @param *data frame.
- * @param len length of frame returned.
- * @return 0.
- * @note To be run on RPI connected to drone's FC UART.
- * @note Never ending loop to be terminated with SIGINT or SIGKILL.
- * @note Receiver accepts UDP connection from any IP address.
- */
-int uart_read_frame(const uint8_t *data, size_t len) {
-
-
-    unsigned char header[2];
-    unsigned char payload[64];
+int uart_read_frame(uint8_t *frame, size_t len) {
 
     if (uart_fd < 0) {
         fprintf(stderr, "UART uninitialized\n");
@@ -142,27 +124,30 @@ int uart_read_frame(const uint8_t *data, size_t len) {
 
     while (1) {
         // 1. Find sync (0xC8)
-        if (read(uart_fd, &header[0], 1) <= 0) continue;
-        if (header[0] != 0xC8) continue;
+        if (read(uart_fd, &frame[0], 1) <= 0) continue;
+        if (frame[0] != 0xC8) continue;
 
         // 2. Read length
-        if (read(uart_fd, &header[1], 1) <= 0) continue;
+        if (read(uart_fd, &frame[1], 1) <= 0) continue;
 
-        int bytes_remaining = header[1];
+        int bytes_remaining = frame[1];
 
-        if (bytes_remaining > sizeof(payload)) {
-            fprintf(stderr, "uart_read_crsf: frame too big: %d\n", bytes_remaining);
+        if (bytes_remaining > len - 2) {
+            fprintf(stderr, "uart_read_frame: frame too big: %d\n", bytes_remaining);
             return -1;
             continue;
         }
 
         // Read rest of the frame
-        int n = read(uart_fd, payload, bytes_remaining);
+        int n = read(uart_fd, &frame[2], bytes_remaining);
 
         if (n == bytes_remaining) {
 
-            printf("uart_read_crsf: Read frame type: 0x%02x, Payload size: %d\n", payload[0], n);
+            printf("uart_read_frame: Read frame type: 0x%02x, Payload size: %d\n", frame[2], n);
             return bytes_remaining + 2;
+        } else {
+        	printf("uart_read_frame: incomplete frame: got %d/%d bytes\n", n, bytes_remaining);
+        	continue;
         }
 
     }
