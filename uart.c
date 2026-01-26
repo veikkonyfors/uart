@@ -56,7 +56,7 @@ int uart_init(const char *port, int baudrate) {
         default:
             // Try special baud rate
             printf("Use special baud rate: %d\n", baudrate);
-            speed = B115200; // Oletus
+            speed = baudrate; // Oletus
             break;
     }
 
